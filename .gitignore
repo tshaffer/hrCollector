@@ -1,0 +1,15 @@
+# macOS / Xcode
+.DS_Store
+ios/DerivedData/
+ios/*.xcodeproj/
+ios/xcuserdata/
+ios/**/xcuserdata/
+*.xcworkspace/xcuserdata/
+
+# Node / server
+server/node_modules/
+server/dist/
+server/.env
+
+# Misc
+*.log

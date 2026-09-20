@@ -1,0 +1,32 @@
+name: hrCollector
+options:
+  bundleIdPrefix: com.tedshaffer
+  deploymentTarget:
+    iOS: "17.0"
+targets:
+  hrCollector:
+    type: application
+    platform: iOS
+    sources:
+      - path: hrCollector
+    info:
+      path: hrCollector/Info.plist
+      properties:
+        UILaunchScreen: {}
+        NSHealthShareUsageDescription: "hrCollector reads your Cooldown workout heart rate data from Health so it can sync it to your family's server."
+        NSHealthUpdateUsageDescription: "hrCollector does not currently write any data back to Health."
+        NSLocalNetworkUsageDescription: "hrCollector connects to your local sync server on your home Wi-Fi network."
+        NSAppTransportSecurity:
+          NSAllowsLocalNetworking: true
+    entitlements:
+      path: hrCollector/hrCollector.entitlements
+      properties:
+        com.apple.developer.healthkit: true
+        com.apple.developer.healthkit.access: []
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.tedshaffer.hrCollector
+        SWIFT_VERSION: 5.0
+        TARGETED_DEVICE_FAMILY: "1"
+        # Set your Apple Developer Team ID here, or set it in Xcode's Signing & Capabilities UI after generating.
+        DEVELOPMENT_TEAM: ""
