@@ -15,7 +15,12 @@ const sessionSchema = new Schema(
     activityType: { type: String, required: true },
     startDate: { type: Date, required: true },
     endDate: { type: Date, required: true },
-    heartRateSamples: { type: [heartRateSampleSchema], default: [] }
+    heartRateSamples: { type: [heartRateSampleSchema], default: [] },
+    // The heart rate ceiling in effect when this session was first
+    // uploaded. Snapshotted (not recomputed from current settings) so a
+    // later change to the global threshold doesn't retroactively change
+    // what "time above threshold" meant for past sessions.
+    thresholdBpm: { type: Number, required: true }
   },
   { timestamps: true }
 );

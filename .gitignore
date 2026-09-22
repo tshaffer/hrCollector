@@ -11,5 +11,12 @@ server/node_modules/
 server/dist/
 server/.env
 
+# Node / web
+web/node_modules/
+web/dist/
+web/.env
+web/.env.local
+web/.vite/
+
 # Misc
 *.log

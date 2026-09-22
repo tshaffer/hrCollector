@@ -1,0 +1,261 @@
+:root {
+  --color-bg: #f7f8fa;
+  --color-surface: #ffffff;
+  --color-border: #e2e5e9;
+  --color-text: #1f2933;
+  --color-text-muted: #5b6572;
+  --color-accent: #3f6fa8;
+  --color-safe: #2f9e6e;
+  --color-alert: #c0442c;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  background: var(--color-bg);
+  color: var(--color-text);
+}
+
+.app-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 24px;
+  background: var(--color-surface);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.app-title {
+  font-weight: 600;
+  font-size: 1.1rem;
+  color: var(--color-text);
+  text-decoration: none;
+}
+
+.settings-link {
+  color: var(--color-text-muted);
+  text-decoration: none;
+  font-size: 0.95rem;
+}
+
+.settings-link.active,
+.app-title.active {
+  color: var(--color-accent);
+}
+
+.app-main {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 24px 16px 64px;
+}
+
+.session-card {
+  display: block;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 12px;
+  padding: 16px 20px;
+  margin-bottom: 12px;
+  text-decoration: none;
+  color: var(--color-text);
+}
+
+.session-card:hover {
+  border-color: var(--color-accent);
+}
+
+.session-card-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+}
+
+.session-card-title {
+  font-weight: 600;
+}
+
+.session-card-duration {
+  color: var(--color-text-muted);
+  font-size: 0.9rem;
+}
+
+.session-card-stats {
+  margin-top: 8px;
+  display: flex;
+  gap: 16px;
+  font-size: 0.9rem;
+  color: var(--color-text-muted);
+}
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.badge-safe {
+  background: rgba(47, 158, 110, 0.12);
+  color: var(--color-safe);
+}
+
+.badge-alert {
+  background: rgba(192, 68, 44, 0.12);
+  color: var(--color-alert);
+}
+
+.empty-state {
+  color: var(--color-text-muted);
+  text-align: center;
+  padding: 48px 0;
+}
+
+.stat-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 12px;
+  margin: 20px 0;
+}
+
+.stat-tile {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 10px;
+  padding: 12px 16px;
+}
+
+.stat-tile-label {
+  font-size: 0.8rem;
+  color: var(--color-text-muted);
+}
+
+.stat-tile-value {
+  font-size: 1.4rem;
+  font-weight: 600;
+  margin-top: 4px;
+}
+
+.back-link {
+  color: var(--color-accent);
+  text-decoration: none;
+  font-size: 0.9rem;
+}
+
+.settings-form {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 12px;
+  padding: 20px;
+  max-width: 320px;
+}
+
+.settings-form label {
+  display: block;
+  font-size: 0.9rem;
+  color: var(--color-text-muted);
+  margin-bottom: 6px;
+}
+
+.settings-form input {
+  width: 100%;
+  padding: 8px 10px;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  font-size: 1rem;
+}
+
+.settings-form button {
+  margin-top: 12px;
+  padding: 8px 16px;
+  border: none;
+  border-radius: 8px;
+  background: var(--color-accent);
+  color: white;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.status-text {
+  margin-top: 10px;
+  font-size: 0.9rem;
+  color: var(--color-text-muted);
+}
+
+/* --- Heart rate chart tokens (dataviz reference palette) --- */
+.viz-root {
+  color-scheme: light;
+  --viz-surface: #fcfcfb;
+  --viz-text-primary: #0b0b0b;
+  --viz-text-secondary: #52514e;
+  --viz-muted: #898781;
+  --viz-gridline: #e1e0d9;
+  --viz-baseline: #c3c2b7;
+  --viz-series: #2a78d6;
+  --viz-critical: #d03b3b;
+  --viz-critical-band: rgba(208, 59, 59, 0.08);
+}
+@media (prefers-color-scheme: dark) {
+  :root:where(:not([data-theme="light"])) .viz-root {
+    color-scheme: dark;
+    --viz-surface: #1a1a19;
+    --viz-text-primary: #ffffff;
+    --viz-text-secondary: #c3c2b7;
+    --viz-muted: #898781;
+    --viz-gridline: #2c2c2a;
+    --viz-baseline: #383835;
+    --viz-series: #3987e5;
+    --viz-critical: #e66767;
+    --viz-critical-band: rgba(230, 103, 103, 0.1);
+  }
+}
+
+.viz-root {
+  background: var(--viz-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 12px;
+  padding: 12px;
+}
+
+.viz-root svg {
+  width: 100%;
+  height: auto;
+  display: block;
+  overflow: visible;
+}
+
+.viz-axis-text {
+  fill: var(--viz-muted);
+  font-size: 11px;
+}
+
+.viz-threshold-label {
+  fill: var(--viz-text-secondary);
+  font-size: 11px;
+}
+
+.viz-band-label {
+  fill: var(--viz-critical);
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.viz-tooltip-value {
+  fill: var(--viz-text-primary);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.viz-tooltip-label {
+  fill: var(--viz-text-secondary);
+  font-size: 11px;
+}
+
+.viz-max-label {
+  fill: var(--viz-text-primary);
+  font-size: 12px;
+  font-weight: 600;
+}
