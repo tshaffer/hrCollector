@@ -94,6 +94,20 @@ export default function HeartRateChart({ samples, thresholdBpm: rawThresholdBpm 
     setHoverIndex(nearest);
   }
 
+  // Arrow-key navigation for the crosshair: same details on keyboard focus
+  // as on hover (see dataviz interaction guidance) — Right/Left step the
+  // cursor one sample at a time, clamped to the sample range.
+  function handleKeyDown(event: React.KeyboardEvent<SVGRectElement>) {
+    const step = event.shiftKey ? 10 : 1;
+    if (event.key === "ArrowRight") {
+      event.preventDefault();
+      setHoverIndex((current) => (current === null ? 0 : Math.min(points.length - 1, current + step)));
+    } else if (event.key === "ArrowLeft") {
+      event.preventDefault();
+      setHoverIndex((current) => (current === null ? points.length - 1 : Math.max(0, current - step)));
+    }
+  }
+
   const hovered = hoverIndex !== null ? points[hoverIndex] : null;
   // Keep the tooltip box on-screen by flipping it to the left when the
   // hovered point is near the right edge.
@@ -182,15 +196,27 @@ export default function HeartRateChart({ samples, thresholdBpm: rawThresholdBpm 
           </g>
         )}
 
-        {/* Hover hit target — covers the whole plot area */}
+        {/* Hover hit target — covers the whole plot area. Also keyboard-focusable
+            so Left/Right arrow keys can drive the same crosshair. */}
         <rect
           x={MARGIN.left}
           y={MARGIN.top}
           width={PLOT_WIDTH}
           height={PLOT_HEIGHT}
           fill="transparent"
+          tabIndex={0}
+          role="slider"
+          aria-label="Heart rate at time"
+          aria-valuemin={0}
+          aria-valuemax={points.length - 1}
+          aria-valuenow={hoverIndex ?? undefined}
+          aria-valuetext={hovered ? `${Math.round(hovered.bpm)} bpm at ${timeFormatter.format(new Date(hovered.timestamp))}` : undefined}
+          className="viz-hit-target"
           onPointerMove={handlePointerMove}
           onPointerLeave={() => setHoverIndex(null)}
+          onKeyDown={handleKeyDown}
+          onFocus={() => setHoverIndex((current) => (current === null ? 0 : current))}
+          onBlur={() => setHoverIndex(null)}
         />
       </svg>
     </div>

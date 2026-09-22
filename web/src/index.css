@@ -227,6 +227,15 @@ body {
   overflow: visible;
 }
 
+.viz-hit-target {
+  outline: none;
+}
+
+.viz-hit-target:focus-visible {
+  outline: 2px solid var(--viz-series);
+  outline-offset: -2px;
+}
+
 .viz-axis-text {
   fill: var(--viz-muted);
   font-size: 11px;
