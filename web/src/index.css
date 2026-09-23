@@ -145,6 +145,31 @@ body {
   font-size: 0.9rem;
 }
 
+.session-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.session-nav-group {
+  display: flex;
+  gap: 16px;
+}
+
+.session-nav-link {
+  color: var(--color-accent);
+  text-decoration: none;
+  font-size: 0.9rem;
+}
+
+.session-nav-link-disabled {
+  color: var(--color-text-muted);
+  opacity: 0.5;
+  cursor: default;
+}
+
 .settings-form {
   background: var(--color-surface);
   border: 1px solid var(--color-border);
@@ -209,6 +234,7 @@ body {
   --viz-critical-band: rgba(208, 59, 59, 0.08);
   --viz-segment: #4a3aa7;
   --viz-segment-band: rgba(74, 58, 167, 0.1);
+  --viz-segment-band-active: rgba(74, 58, 167, 0.22);
 }
 @media (prefers-color-scheme: dark) {
   :root:where(:not([data-theme="light"])) .viz-root {
@@ -224,6 +250,7 @@ body {
     --viz-critical-band: rgba(230, 103, 103, 0.1);
     --viz-segment: #9085e9;
     --viz-segment-band: rgba(144, 133, 233, 0.14);
+    --viz-segment-band-active: rgba(144, 133, 233, 0.3);
   }
 }
 
@@ -249,16 +276,6 @@ body {
 .viz-hit-target:focus-visible {
   outline: 2px solid var(--viz-series);
   outline-offset: -2px;
-}
-
-.viz-segment-label {
-  fill: var(--viz-text-secondary);
-  font-size: 9px;
-}
-
-.viz-segment-label-empty {
-  fill: var(--viz-muted);
-  font-style: italic;
 }
 
 .viz-segment-form {
@@ -377,6 +394,10 @@ body {
 .segment-source {
   color: var(--color-text-muted);
   font-size: 0.8rem;
+}
+
+.segment-row:hover {
+  background: var(--viz-segment-band, rgba(74, 58, 167, 0.1));
 }
 
 .segments-table input[type="text"] {

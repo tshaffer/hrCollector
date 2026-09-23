@@ -8,18 +8,16 @@ interface Props {
   thresholdBpm: number;
   segments: Segment[];
   onSegmentCreated: (segment: Segment) => void;
+  /** Segment id currently hovered in the segments table below — shown
+   * with a stronger wash + outline so it's obvious which band it is. */
+  highlightedSegmentId?: string | null;
 }
 
 const WIDTH = 800;
-// Fixed height of the plot + x-axis area. The segments track (if any
-// segments exist) is appended below this, so the plot itself never
-// resizes based on how many segments a session has.
 const CHART_HEIGHT = 280;
 const MARGIN = { top: 16, right: 16, bottom: 28, left: 40 };
 const PLOT_WIDTH = WIDTH - MARGIN.left - MARGIN.right;
 const PLOT_HEIGHT = CHART_HEIGHT - MARGIN.top - MARGIN.bottom;
-const SEGMENT_ROW_HEIGHT = 18;
-const SEGMENT_TRACK_GAP = 8;
 
 const timeFormatter = new Intl.DateTimeFormat(undefined, { hour: "numeric", minute: "2-digit", second: "2-digit" });
 const axisTimeFormatter = new Intl.DateTimeFormat(undefined, { hour: "numeric", minute: "2-digit" });
@@ -38,7 +36,14 @@ interface PendingSelection {
   endIndex: number;
 }
 
-export default function HeartRateChart({ sessionId, samples, thresholdBpm: rawThresholdBpm, segments, onSegmentCreated }: Props) {
+export default function HeartRateChart({
+  sessionId,
+  samples,
+  thresholdBpm: rawThresholdBpm,
+  segments,
+  onSegmentCreated,
+  highlightedSegmentId
+}: Props) {
   const [hoverIndex, setHoverIndex] = useState<number | null>(null);
   const [dragStart, setDragStart] = useState<number | null>(null);
   const [dragCurrent, setDragCurrent] = useState<number | null>(null);
@@ -102,27 +107,15 @@ export default function HeartRateChart({ sessionId, samples, thresholdBpm: rawTh
 
   const xTickTimes = [points[0].t, points[Math.floor(points.length / 2)].t, points[points.length - 1].t];
 
-  // Row-stack segments so overlapping ones (an auto segment and a manual
-  // one drawn over the same span, say) render on separate rows instead of
-  // colliding.
-  const sortedSegments = [...segments].sort(
-    (a, b) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime()
-  );
-  const rowEndTimes: number[] = [];
-  const geometrySegments = sortedSegments.map((seg) => {
-    const startMs = new Date(seg.startTime).getTime();
-    const endMs = new Date(seg.endTime).getTime();
-    let row = 0;
-    while (row < rowEndTimes.length && rowEndTimes[row] > startMs) row++;
-    rowEndTimes[row] = endMs;
-    return { seg, startMs, endMs, row };
-  });
-  const segmentRowCount = geometrySegments.length > 0 ? Math.max(...geometrySegments.map((g) => g.row)) + 1 : 0;
-  const segmentsTrackHeight = segmentRowCount > 0 ? SEGMENT_TRACK_GAP + segmentRowCount * SEGMENT_ROW_HEIGHT : 0;
-  const HEIGHT = CHART_HEIGHT + segmentsTrackHeight;
-  function rowTop(row: number): number {
-    return CHART_HEIGHT + SEGMENT_TRACK_GAP + row * SEGMENT_ROW_HEIGHT;
-  }
+  const segmentSpans = segments.map((seg) => ({
+    id: seg.id,
+    startMs: new Date(seg.startTime).getTime(),
+    endMs: new Date(seg.endTime).getTime()
+  }));
+  // Draw the highlighted span last so its outline isn't covered by a
+  // neighboring/overlapping segment's band.
+  const highlightedSpan = highlightedSegmentId ? segmentSpans.find((s) => s.id === highlightedSegmentId) ?? null : null;
+  const unhighlightedSpans = highlightedSpan ? segmentSpans.filter((s) => s.id !== highlightedSpan.id) : segmentSpans;
 
   function nearestIndexForClientX(clientX: number): number {
     const svg = svgRef.current;
@@ -236,7 +229,7 @@ export default function HeartRateChart({ sessionId, samples, thresholdBpm: rawTh
 
   return (
     <div className="viz-root">
-      <svg ref={svgRef} viewBox={`0 0 ${WIDTH} ${HEIGHT}`} role="img" aria-label="Heart rate over time">
+      <svg ref={svgRef} viewBox={`0 0 ${WIDTH} ${CHART_HEIGHT}`} role="img" aria-label="Heart rate over time">
         {/* Above-threshold zone */}
         <rect
           x={MARGIN.left}
@@ -245,6 +238,36 @@ export default function HeartRateChart({ sessionId, samples, thresholdBpm: rawTh
           height={Math.max(0, thresholdY - bandTop)}
           fill="var(--viz-critical-band)"
         />
+
+        {/* Labeled segments (auto-detected or drawn by hand) — a subtle
+            wash across the plot for each one's time span. Overlapping
+            segments layer into a slightly darker wash where they overlap. */}
+        {unhighlightedSpans.map((span) => (
+          <rect
+            key={span.id}
+            x={timeToX(span.startMs)}
+            y={MARGIN.top}
+            width={Math.max(0, timeToX(span.endMs) - timeToX(span.startMs))}
+            height={PLOT_HEIGHT}
+            fill="var(--viz-segment-band)"
+          />
+        ))}
+
+        {/* The segment currently hovered in the table below — a stronger
+            wash and an outline so the reader sees it respond, same as any
+            other hovered mark (see dataviz interaction guidance). */}
+        {highlightedSpan && (
+          <rect
+            x={timeToX(highlightedSpan.startMs)}
+            y={MARGIN.top}
+            width={Math.max(0, timeToX(highlightedSpan.endMs) - timeToX(highlightedSpan.startMs))}
+            height={PLOT_HEIGHT}
+            fill="var(--viz-segment-band-active)"
+            stroke="var(--viz-segment)"
+            strokeWidth={1.5}
+          />
+        )}
+
         {gridTicks.map((tick) => (
           <line
             key={tick}
@@ -300,30 +323,6 @@ export default function HeartRateChart({ sessionId, samples, thresholdBpm: rawTh
         <text x={maxPoint.x} y={yScale(maxPoint.bpm) - 10} textAnchor="middle" className="viz-max-label">
           {Math.round(maxPoint.bpm)}
         </text>
-
-        {/* Labeled segments (auto-detected or drawn by hand) */}
-        {geometrySegments.map(({ seg, row }) => {
-          const x1 = timeToX(new Date(seg.startTime).getTime());
-          const x2 = timeToX(new Date(seg.endTime).getTime());
-          const lineY = rowTop(row) + SEGMENT_ROW_HEIGHT - 3;
-          const textY = rowTop(row) + 9;
-          const hasLabel = seg.label.trim().length > 0;
-          return (
-            <g key={seg.id}>
-              <line x1={x1} x2={x2} y1={lineY} y2={lineY} stroke="var(--viz-segment)" strokeWidth={3} strokeLinecap="round" />
-              <line x1={x1} x2={x1} y1={lineY - 4} y2={lineY + 4} stroke="var(--viz-segment)" strokeWidth={2} />
-              <line x1={x2} x2={x2} y1={lineY - 4} y2={lineY + 4} stroke="var(--viz-segment)" strokeWidth={2} />
-              <text
-                x={(x1 + x2) / 2}
-                y={textY}
-                textAnchor="middle"
-                className={hasLabel ? "viz-segment-label" : "viz-segment-label viz-segment-label-empty"}
-              >
-                {hasLabel ? seg.label : "Unlabeled"}
-              </text>
-            </g>
-          );
-        })}
 
         {/* Drag-to-select overlay, live while dragging or held while the
             label form below is open */}

@@ -1,18 +1,20 @@
 import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import HeartRateChart from "../components/HeartRateChart";
-import { deleteSegment, fetchSession, updateSegmentLabel } from "../lib/api";
+import { deleteSegment, fetchSession, fetchSessions, updateSegmentLabel } from "../lib/api";
 import { formatBpm, formatDuration, formatPercent, formatSessionTitle } from "../lib/format";
-import type { Segment, SessionDetail } from "../types";
+import type { Segment, SessionDetail, SessionSummary } from "../types";
 
 function SegmentRow({
   segment,
   onChange,
-  onDelete
+  onDelete,
+  onHover
 }: {
   segment: Segment;
   onChange: (segment: Segment) => void;
   onDelete: (id: string) => void;
+  onHover: (id: string | null) => void;
 }) {
   const [label, setLabel] = useState(segment.label);
   const [saving, setSaving] = useState(false);
@@ -48,7 +50,7 @@ function SegmentRow({
   const timeFormatter = new Intl.DateTimeFormat(undefined, { hour: "numeric", minute: "2-digit", second: "2-digit" });
 
   return (
-    <tr className="segment-row">
+    <tr className="segment-row" onMouseEnter={() => onHover(segment.id)} onMouseLeave={() => onHover(null)}>
       <td>
         {timeFormatter.format(start)}–{timeFormatter.format(end)}
         <span className="segment-source"> · {segment.source === "auto" ? "auto-detected" : "manual"}</span>
@@ -85,6 +87,11 @@ export default function SessionDetailPage() {
   const { id } = useParams<{ id: string }>();
   const [session, setSession] = useState<SessionDetail | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [hoveredSegmentId, setHoveredSegmentId] = useState<string | null>(null);
+  // The full session list, most-recent-first (same order the list page
+  // shows), just to figure out this session's neighbors for Previous/Next.
+  // Fetched once — it doesn't change as the user steps between sessions.
+  const [sessionList, setSessionList] = useState<SessionSummary[] | null>(null);
 
   useEffect(() => {
     if (!id) return;
@@ -92,6 +99,12 @@ export default function SessionDetailPage() {
       .then(setSession)
       .catch((err) => setError(err.message));
   }, [id]);
+
+  useEffect(() => {
+    fetchSessions()
+      .then(setSessionList)
+      .catch(() => setSessionList(null));
+  }, []);
 
   if (error) return <p className="empty-state">Couldn't load this session: {error}</p>;
   if (!session) return <p className="empty-state">Loading…</p>;
@@ -118,11 +131,37 @@ export default function SessionDetailPage() {
     (a, b) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime()
   );
 
+  // sessionList is most-recent-first (same order as the list page), so the
+  // previous entry (index - 1) is the newer neighbor and the next entry
+  // (index + 1) is the older one.
+  const currentIndex = sessionList?.findIndex((s) => s.id === session.id) ?? -1;
+  const previousSession = sessionList && currentIndex > 0 ? sessionList[currentIndex - 1] : null;
+  const nextSession =
+    sessionList && currentIndex >= 0 && currentIndex < sessionList.length - 1 ? sessionList[currentIndex + 1] : null;
+
   return (
     <div>
-      <Link to="/" className="back-link">
-        ← All sessions
-      </Link>
+      <div className="session-toolbar">
+        <Link to="/" className="back-link">
+          ← All sessions
+        </Link>
+        <div className="session-nav-group">
+          {previousSession ? (
+            <Link to={`/sessions/${previousSession.id}`} className="session-nav-link">
+              ← Previous session
+            </Link>
+          ) : (
+            <span className="session-nav-link session-nav-link-disabled">← Previous session</span>
+          )}
+          {nextSession ? (
+            <Link to={`/sessions/${nextSession.id}`} className="session-nav-link">
+              Next session →
+            </Link>
+          ) : (
+            <span className="session-nav-link session-nav-link-disabled">Next session →</span>
+          )}
+        </div>
+      </div>
       <h2>{formatSessionTitle(session.startDate, session.endDate)}</h2>
 
       <div className="stat-grid">
@@ -154,6 +193,7 @@ export default function SessionDetailPage() {
         thresholdBpm={session.thresholdBpm}
         segments={session.segments}
         onSegmentCreated={handleSegmentCreated}
+        highlightedSegmentId={hoveredSegmentId}
       />
       <p className="field-hint">Press and drag across the chart to mark a segment and give it a label.</p>
 
@@ -178,6 +218,7 @@ export default function SessionDetailPage() {
                   segment={segment}
                   onChange={handleSegmentChanged}
                   onDelete={handleSegmentDeleted}
+                  onHover={setHoveredSegmentId}
                 />
               ))}
             </tbody>
