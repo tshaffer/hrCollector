@@ -1,11 +1,10 @@
 import { Router } from "express";
 import { SessionModel, type SessionDocument } from "../models/Session.js";
 import { getSettings } from "../models/Settings.js";
+import { getSegmentsWithStats, regenerateAutoSegments, type SessionDoc } from "../segmentsService.js";
 import { computeSessionStats } from "../stats.js";
 
 export const sessionsRouter = Router();
-
-type SessionDoc = SessionDocument & { _id: unknown };
 
 function toResponse(doc: SessionDoc, { includeSamples }: { includeSamples: boolean }) {
   const stats = computeSessionStats(doc.heartRateSamples ?? [], doc.thresholdBpm, doc.startDate, doc.endDate);
@@ -47,7 +46,9 @@ sessionsRouter.post("/", async (req, res) => {
       },
       { upsert: true, new: true }
     );
-    res.status(200).json(toResponse(doc as SessionDoc, { includeSamples: true }));
+    await regenerateAutoSegments(doc as SessionDoc, settings.minSegmentDurationSeconds, settings.mergeGapSeconds);
+    const segments = await getSegmentsWithStats(doc as SessionDoc);
+    res.status(200).json({ ...toResponse(doc as SessionDoc, { includeSamples: true }), segments });
   } catch (error) {
     console.error("[POST /api/sessions] failed:", error);
     res.status(500).json({ error: "Failed to save session." });
@@ -72,7 +73,8 @@ sessionsRouter.get("/:id", async (req, res) => {
   try {
     const doc = await SessionModel.findById(req.params.id);
     if (!doc) return res.status(404).json({ error: "Not found" });
-    res.json(toResponse(doc as SessionDoc, { includeSamples: true }));
+    const segments = await getSegmentsWithStats(doc as SessionDoc);
+    res.json({ ...toResponse(doc as SessionDoc, { includeSamples: true }), segments });
   } catch (error) {
     console.error("[GET /api/sessions/:id] failed:", error);
     res.status(500).json({ error: "Failed to fetch session." });

@@ -3,27 +3,53 @@ import { fetchSettings, updateSettings } from "../lib/api";
 
 export default function SettingsPage() {
   const [thresholdBpm, setThresholdBpm] = useState<string>("");
+  const [minSegmentDurationSeconds, setMinSegmentDurationSeconds] = useState<string>("");
+  const [mergeGapSeconds, setMergeGapSeconds] = useState<string>("");
   const [status, setStatus] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     fetchSettings()
-      .then((settings) => setThresholdBpm(String(settings.thresholdBpm)))
+      .then((settings) => {
+        setThresholdBpm(String(settings.thresholdBpm));
+        setMinSegmentDurationSeconds(String(settings.minSegmentDurationSeconds));
+        setMergeGapSeconds(String(settings.mergeGapSeconds));
+      })
       .catch((err) => setStatus(`Couldn't load settings: ${err.message}`))
       .finally(() => setLoading(false));
   }, []);
 
   async function handleSave(event: React.FormEvent) {
     event.preventDefault();
-    const value = Number(thresholdBpm);
-    if (!Number.isFinite(value) || value <= 0) {
-      setStatus("Enter a positive number.");
+    const threshold = Number(thresholdBpm);
+    const minDuration = Number(minSegmentDurationSeconds);
+    const gap = Number(mergeGapSeconds);
+
+    if (!Number.isFinite(threshold) || threshold <= 0) {
+      setStatus("Heart rate limit must be a positive number.");
       return;
     }
+    if (!Number.isFinite(minDuration) || minDuration <= 0) {
+      setStatus("Minimum sustained duration must be a positive number.");
+      return;
+    }
+    if (!Number.isFinite(gap) || gap < 0) {
+      setStatus("Gap tolerance must be zero or a positive number.");
+      return;
+    }
+
     try {
-      const saved = await updateSettings(value);
+      const saved = await updateSettings({
+        thresholdBpm: threshold,
+        minSegmentDurationSeconds: minDuration,
+        mergeGapSeconds: gap
+      });
       setThresholdBpm(String(saved.thresholdBpm));
-      setStatus("Saved. New sessions will use this limit — past sessions keep the limit that was active when they were recorded.");
+      setMinSegmentDurationSeconds(String(saved.minSegmentDurationSeconds));
+      setMergeGapSeconds(String(saved.mergeGapSeconds));
+      setStatus(
+        "Saved. The heart rate limit only applies to new sessions — past sessions keep the limit that was active when recorded. The segment settings below apply immediately to every session's auto-detected segments."
+      );
     } catch (err) {
       setStatus(err instanceof Error ? err.message : "Failed to save.");
     }
@@ -41,6 +67,33 @@ export default function SettingsPage() {
         value={thresholdBpm}
         onChange={(e) => setThresholdBpm(e.target.value)}
       />
+
+      <label htmlFor="minSegmentDuration">
+        Minimum sustained duration for an auto-detected segment (seconds)
+      </label>
+      <input
+        id="minSegmentDuration"
+        type="number"
+        min={1}
+        value={minSegmentDurationSeconds}
+        onChange={(e) => setMinSegmentDurationSeconds(e.target.value)}
+      />
+      <p className="field-hint">
+        Heart rate has to stay above the limit for at least this long before it's called out as a segment.
+      </p>
+
+      <label htmlFor="mergeGap">Gap tolerance (seconds)</label>
+      <input
+        id="mergeGap"
+        type="number"
+        min={0}
+        value={mergeGapSeconds}
+        onChange={(e) => setMergeGapSeconds(e.target.value)}
+      />
+      <p className="field-hint">
+        A brief dip below the limit shorter than this doesn't end a sustained segment.
+      </p>
+
       <button type="submit">Save</button>
       {status && <p className="status-text">{status}</p>}
     </form>

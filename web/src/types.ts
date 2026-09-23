@@ -11,6 +11,19 @@ export interface SessionStats {
   durationSeconds: number;
 }
 
+export type SegmentSource = "auto" | "manual";
+
+export interface Segment {
+  id: string;
+  sessionId: string;
+  startTime: string;
+  endTime: string;
+  source: SegmentSource;
+  label: string;
+  edited: boolean;
+  stats: SessionStats;
+}
+
 export interface SessionSummary {
   id: string;
   workoutId: string;
@@ -23,8 +36,15 @@ export interface SessionSummary {
 
 export interface SessionDetail extends SessionSummary {
   heartRateSamples: HeartRateSample[];
+  segments: Segment[];
 }
 
 export interface Settings {
   thresholdBpm: number;
+  /** How long heart rate must stay above threshold before an auto segment
+   * is created for it. */
+  minSegmentDurationSeconds: number;
+  /** Brief dips below threshold shorter than this don't end a sustained
+   * episode. */
+  mergeGapSeconds: number;
 }

@@ -4,8 +4,10 @@ import express from "express";
 import { connectToDatabase } from "./db.js";
 import { SessionModel } from "./models/Session.js";
 import { getSettings } from "./models/Settings.js";
+import { segmentsRouter } from "./routes/segments.js";
 import { sessionsRouter } from "./routes/sessions.js";
 import { settingsRouter } from "./routes/settings.js";
+import { regenerateAllAutoSegments } from "./segmentsService.js";
 
 const PORT = Number(process.env.PORT ?? 4000);
 const HOST = process.env.HOST ?? "0.0.0.0";
@@ -28,9 +30,21 @@ async function backfillMissingThresholds() {
   }
 }
 
+/** Makes sure every session has up-to-date auto segments — covers both
+ * sessions recorded before this feature existed, and any settings change
+ * made while the server wasn't running. */
+async function backfillAutoSegments() {
+  const settings = await getSettings();
+  const count = await regenerateAllAutoSegments(settings.minSegmentDurationSeconds, settings.mergeGapSeconds);
+  if (count > 0) {
+    console.log(`[startup] regenerated auto segments for ${count} session(s)`);
+  }
+}
+
 async function main() {
   await connectToDatabase(MONGODB_URI);
   await backfillMissingThresholds();
+  await backfillAutoSegments();
 
   const app = express();
   app.use(cors());
@@ -39,6 +53,7 @@ async function main() {
   app.get("/health", (_req, res) => res.json({ ok: true }));
   app.use("/api/sessions", sessionsRouter);
   app.use("/api/settings", settingsRouter);
+  app.use("/api/segments", segmentsRouter);
 
   app.listen(PORT, HOST, () => {
     console.log(`[server] listening on http://${HOST}:${PORT}`);
