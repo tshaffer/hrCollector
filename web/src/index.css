@@ -396,6 +396,20 @@ body {
   font-size: 0.8rem;
 }
 
+.segment-row-nested {
+  background: rgba(74, 58, 167, 0.05);
+}
+
+.segment-row-nested td:first-child {
+  padding-left: 24px;
+}
+
+.segment-nest-indicator {
+  display: inline-block;
+  color: var(--color-text-muted);
+  margin-right: 4px;
+}
+
 .segment-row:hover {
   background: var(--viz-segment-band, rgba(74, 58, 167, 0.1));
 }

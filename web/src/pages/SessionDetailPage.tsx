@@ -7,11 +7,13 @@ import type { Segment, SessionDetail, SessionSummary } from "../types";
 
 function SegmentRow({
   segment,
+  isNested,
   onChange,
   onDelete,
   onHover
 }: {
   segment: Segment;
+  isNested: boolean;
   onChange: (segment: Segment) => void;
   onDelete: (id: string) => void;
   onHover: (id: string | null) => void;
@@ -50,8 +52,13 @@ function SegmentRow({
   const timeFormatter = new Intl.DateTimeFormat(undefined, { hour: "numeric", minute: "2-digit", second: "2-digit" });
 
   return (
-    <tr className="segment-row" onMouseEnter={() => onHover(segment.id)} onMouseLeave={() => onHover(null)}>
+    <tr
+      className={isNested ? "segment-row segment-row-nested" : "segment-row"}
+      onMouseEnter={() => onHover(segment.id)}
+      onMouseLeave={() => onHover(null)}
+    >
       <td>
+        {isNested && <span className="segment-nest-indicator" title="Falls entirely within another segment below/above">↳</span>}
         {timeFormatter.format(start)}–{timeFormatter.format(end)}
         <span className="segment-source"> · {segment.source === "auto" ? "auto-detected" : "manual"}</span>
       </td>
@@ -130,6 +137,24 @@ export default function SessionDetailPage() {
   const sortedSegments = [...session.segments].sort(
     (a, b) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime()
   );
+
+  // A segment is "nested" when another segment's time range fully
+  // contains it (and is strictly longer, so two segments with the exact
+  // same range don't mark each other as nested). This is expected — a
+  // manual segment and an auto-detected one are tracked independently
+  // and can legitimately overlap — but it reads as confusing in a flat
+  // table, so nested rows get a visual indent instead.
+  function isNestedSegment(segment: Segment): boolean {
+    const start = new Date(segment.startTime).getTime();
+    const end = new Date(segment.endTime).getTime();
+    const span = end - start;
+    return session!.segments.some((other) => {
+      if (other.id === segment.id) return false;
+      const otherStart = new Date(other.startTime).getTime();
+      const otherEnd = new Date(other.endTime).getTime();
+      return otherStart <= start && otherEnd >= end && otherEnd - otherStart > span;
+    });
+  }
 
   // sessionList is most-recent-first (same order as the list page), so the
   // previous entry (index - 1) is the newer neighbor and the next entry
@@ -216,6 +241,7 @@ export default function SessionDetailPage() {
                 <SegmentRow
                   key={segment.id}
                   segment={segment}
+                  isNested={isNestedSegment(segment)}
                   onChange={handleSegmentChanged}
                   onDelete={handleSegmentDeleted}
                   onHover={setHoveredSegmentId}
