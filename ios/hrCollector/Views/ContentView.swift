@@ -41,9 +41,9 @@ struct ContentView: View {
                     }
                 }
 
-                Section("Recent Cooldown sessions") {
+                Section("Recent sessions") {
                     if sessions.isEmpty {
-                        Text("No sessions found yet. Tap Sync Now after your wife records a Cooldown.")
+                        Text("No sessions found yet. Tap Sync Now after your wife records a Cooldown or Other workout.")
                             .foregroundStyle(.secondary)
                     }
                     ForEach(sessions) { session in
@@ -78,7 +78,7 @@ struct ContentView: View {
 
     private func refreshFromHealthKit() async {
         do {
-            sessions = try await healthKit.fetchCooldownSessions()
+            sessions = try await healthKit.fetchRecordedSessions()
         } catch {
             statusMessage = "Couldn't read HealthKit: \(error.localizedDescription)"
         }

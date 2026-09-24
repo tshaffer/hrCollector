@@ -1,9 +1,10 @@
 import Foundation
 import HealthKit
 
-/// Owns all HealthKit access: requesting authorization, finding Cooldown
-/// (or any) workouts, and pulling the heart rate samples recorded during
-/// each one.
+/// Owns all HealthKit access: requesting authorization, finding the
+/// workouts used to record heart rate (Cooldown or Other — see
+/// `recordedActivityTypes` below), and pulling the heart rate samples
+/// recorded during each one.
 ///
 /// Background auto-sync: `startObservingNewWorkouts` sets up an
 /// `HKObserverQuery` with background delivery enabled, so iOS *can* wake the
@@ -24,6 +25,13 @@ final class HealthKitManager: ObservableObject {
 
     private var observerQuery: HKObserverQuery?
 
+    /// The workout types she actually uses to record a continuous heart
+    /// rate stream: "Cooldown" (what she's used so far) and "Other" (the
+    /// generic catch-all workout type, in case she ever starts one of
+    /// those instead — same start/stop mechanics, still recorded as an
+    /// HKWorkout with continuous heart rate).
+    private let recordedActivityTypes: [HKWorkoutActivityType] = [.cooldown, .other]
+
     var isHealthDataAvailable: Bool { HKHealthStore.isHealthDataAvailable() }
 
     func requestAuthorization() async {
@@ -43,15 +51,19 @@ final class HealthKitManager: ObservableObject {
         }
     }
 
-    /// Fetches recent workouts, optionally filtered to a single activity
-    /// type (pass nil for all workout types), most recent first.
+    /// Fetches recent workouts, filtered to the given activity types (pass
+    /// an empty array for all workout types), most recent first.
     func fetchWorkouts(
-        activityType: HKWorkoutActivityType? = .cooldown,
+        activityTypes: [HKWorkoutActivityType]? = nil,
         limit: Int = 50
     ) async throws -> [HKWorkout] {
+        let types = activityTypes ?? recordedActivityTypes
         var predicate: NSPredicate? = nil
-        if let activityType {
-            predicate = HKQuery.predicateForWorkouts(with: activityType)
+        if !types.isEmpty {
+            let subpredicates = types.map { HKQuery.predicateForWorkouts(with: $0) }
+            predicate = subpredicates.count == 1
+                ? subpredicates[0]
+                : NSCompoundPredicate(orPredicateWithSubpredicates: subpredicates)
         }
         let sort = [NSSortDescriptor(key: HKSampleSortIdentifierStartDate, ascending: false)]
 
@@ -102,17 +114,17 @@ final class HealthKitManager: ObservableObject {
         }
     }
 
-    /// Convenience: fetches Cooldown workouts and their heart rate series
-    /// together, as ready-to-upload `WorkoutSession` values.
-    func fetchCooldownSessions(limit: Int = 50) async throws -> [WorkoutSession] {
-        let workouts = try await fetchWorkouts(activityType: .cooldown, limit: limit)
+    /// Convenience: fetches Cooldown + Other workouts and their heart rate
+    /// series together, as ready-to-upload `WorkoutSession` values.
+    func fetchRecordedSessions(limit: Int = 50) async throws -> [WorkoutSession] {
+        let workouts = try await fetchWorkouts(activityTypes: recordedActivityTypes, limit: limit)
         var sessions: [WorkoutSession] = []
         for workout in workouts {
             let samples = try await heartRateSamples(for: workout)
             sessions.append(
                 WorkoutSession(
                     workoutId: workout.uuid.uuidString,
-                    activityType: "cooldown",
+                    activityType: activityTypeLabel(for: workout.workoutActivityType),
                     startDate: workout.startDate,
                     endDate: workout.endDate,
                     heartRateSamples: samples
@@ -120,6 +132,17 @@ final class HealthKitManager: ObservableObject {
             )
         }
         return sessions
+    }
+
+    /// Maps a workout's HealthKit activity type to the label stored/shown
+    /// for it. Anything besides Cooldown is reported as "other" — in
+    /// practice that's only ever `.other` itself, since `recordedActivityTypes`
+    /// is what we query for in the first place.
+    private func activityTypeLabel(for type: HKWorkoutActivityType) -> String {
+        switch type {
+        case .cooldown: return "cooldown"
+        default: return "other"
+        }
     }
 
     /// Sets up a background observer so iOS can notify this app when a new

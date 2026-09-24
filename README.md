@@ -1,6 +1,6 @@
 # hrCollector
 
-Captures heart rate data from Apple Watch "Cooldown" workout sessions (via HealthKit, on the phone the Watch is paired to) and uploads it to a local Express/MongoDB backend so it can be viewed elsewhere.
+Captures heart rate data from Apple Watch "Cooldown" or "Other" workout sessions (via HealthKit, on the phone the Watch is paired to) and uploads it to a local Express/MongoDB backend so it can be viewed elsewhere.
 
 ## Layout
 
@@ -67,6 +67,6 @@ Settings.
 
 ## Status
 
-MVP: manual "Sync Now" in the app pulls Cooldown workouts + heart rate from HealthKit and posts them to the server. Background auto-sync (HealthKit observer queries + background delivery) is stubbed in `HealthKitManager` but needs on-device testing to confirm reliability — see comments in that file.
+MVP: manual "Sync Now" in the app pulls Cooldown or Other workouts + heart rate from HealthKit and posts them to the server. Background auto-sync (HealthKit observer queries + background delivery) is stubbed in `HealthKitManager` but needs on-device testing to confirm reliability — see comments in that file.
 
 The web app is view-only for now: a session list with max HR / over-limit badges, a per-session chart (heart rate line, dashed limit line, shaded over-limit zone, hover tooltip), and a Settings page for the limit. Segment labeling (tagging a portion of a session with what caused a heart rate rise) is intentionally deferred — planned for later.

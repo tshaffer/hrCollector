@@ -13,7 +13,7 @@ targets:
       path: hrCollector/Info.plist
       properties:
         UILaunchScreen: {}
-        NSHealthShareUsageDescription: "hrCollector reads your Cooldown workout heart rate data from Health so it can sync it to your family's server."
+        NSHealthShareUsageDescription: "hrCollector reads your Cooldown or Other workout heart rate data from Health so it can sync it to your family's server."
         NSHealthUpdateUsageDescription: "hrCollector does not currently write any data back to Health."
         NSLocalNetworkUsageDescription: "hrCollector connects to your local sync server on your home Wi-Fi network."
         NSAppTransportSecurity:

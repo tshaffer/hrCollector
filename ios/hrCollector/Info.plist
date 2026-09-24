@@ -24,7 +24,7 @@
 		<true/>
 	</dict>
 	<key>NSHealthShareUsageDescription</key>
-	<string>hrCollector reads your Cooldown workout heart rate data from Health so it can sync it to your family's server.</string>
+	<string>hrCollector reads your Cooldown or Other workout heart rate data from Health so it can sync it to your family's server.</string>
 	<key>NSHealthUpdateUsageDescription</key>
 	<string>hrCollector does not currently write any data back to Health.</string>
 	<key>NSLocalNetworkUsageDescription</key>
