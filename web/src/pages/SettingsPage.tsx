@@ -1,15 +1,22 @@
 import { useEffect, useState } from "react";
 import { fetchSettings, updateSettings } from "../lib/api";
+import { useUsers } from "../lib/userContext";
 
 export default function SettingsPage() {
+  const { users, selectedUserId, loading: usersLoading, error: usersError } = useUsers();
   const [thresholdBpm, setThresholdBpm] = useState<string>("");
   const [minSegmentDurationSeconds, setMinSegmentDurationSeconds] = useState<string>("");
   const [mergeGapSeconds, setMergeGapSeconds] = useState<string>("");
   const [status, setStatus] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
+  const currentUserName = users.find((u) => u.id === selectedUserId)?.name;
+
   useEffect(() => {
-    fetchSettings()
+    if (!selectedUserId) return;
+    setLoading(true);
+    setStatus(null);
+    fetchSettings(selectedUserId)
       .then((settings) => {
         setThresholdBpm(String(settings.thresholdBpm));
         setMinSegmentDurationSeconds(String(settings.minSegmentDurationSeconds));
@@ -17,10 +24,12 @@ export default function SettingsPage() {
       })
       .catch((err) => setStatus(`Couldn't load settings: ${err.message}`))
       .finally(() => setLoading(false));
-  }, []);
+  }, [selectedUserId]);
 
   async function handleSave(event: React.FormEvent) {
     event.preventDefault();
+    if (!selectedUserId) return;
+
     const threshold = Number(thresholdBpm);
     const minDuration = Number(minSegmentDurationSeconds);
     const gap = Number(mergeGapSeconds);
@@ -39,7 +48,7 @@ export default function SettingsPage() {
     }
 
     try {
-      const saved = await updateSettings({
+      const saved = await updateSettings(selectedUserId, {
         thresholdBpm: threshold,
         minSegmentDurationSeconds: minDuration,
         mergeGapSeconds: gap
@@ -55,10 +64,13 @@ export default function SettingsPage() {
     }
   }
 
-  if (loading) return <p className="empty-state">Loading…</p>;
+  if (usersError) return <p className="empty-state">Couldn't load users: {usersError}</p>;
+  if (usersLoading || !selectedUserId || loading) return <p className="empty-state">Loading…</p>;
 
   return (
     <form className="settings-form" onSubmit={handleSave}>
+      {currentUserName && <p className="field-hint">Settings for {currentUserName}.</p>}
+
       <label htmlFor="threshold">Heart rate limit (bpm)</label>
       <input
         id="threshold"

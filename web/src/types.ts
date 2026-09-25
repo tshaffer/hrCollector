@@ -1,3 +1,8 @@
+export interface User {
+  id: string;
+  name: string;
+}
+
 export interface HeartRateSample {
   timestamp: string;
   bpm: number;
@@ -24,10 +29,14 @@ export interface Segment {
   stats: SessionStats;
 }
 
+export type DataSource = "healthkit" | "fit";
+
 export interface SessionSummary {
   id: string;
+  userId: string;
   workoutId: string;
   activityType: string;
+  dataSource: DataSource;
   startDate: string;
   endDate: string;
   thresholdBpm: number;

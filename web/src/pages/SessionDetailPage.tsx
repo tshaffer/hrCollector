@@ -3,6 +3,7 @@ import { Link, useParams } from "react-router-dom";
 import HeartRateChart from "../components/HeartRateChart";
 import { deleteSegment, fetchSession, fetchSessions, updateSegmentLabel } from "../lib/api";
 import { formatBpm, formatDuration, formatPercent, formatSessionTitle } from "../lib/format";
+import { useUsers } from "../lib/userContext";
 import type { Segment, SessionDetail, SessionSummary } from "../types";
 
 function SegmentRow({
@@ -92,12 +93,14 @@ function SegmentRow({
 
 export default function SessionDetailPage() {
   const { id } = useParams<{ id: string }>();
+  const { selectedUserId } = useUsers();
   const [session, setSession] = useState<SessionDetail | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [hoveredSegmentId, setHoveredSegmentId] = useState<string | null>(null);
-  // The full session list, most-recent-first (same order the list page
-  // shows), just to figure out this session's neighbors for Previous/Next.
-  // Fetched once — it doesn't change as the user steps between sessions.
+  // The current user's full session list, most-recent-first (same order
+  // the list page shows), just to figure out this session's neighbors
+  // for Previous/Next. Fetched once per selected user — it doesn't
+  // change as you step between sessions.
   const [sessionList, setSessionList] = useState<SessionSummary[] | null>(null);
 
   useEffect(() => {
@@ -108,10 +111,11 @@ export default function SessionDetailPage() {
   }, [id]);
 
   useEffect(() => {
-    fetchSessions()
+    if (!selectedUserId) return;
+    fetchSessions(selectedUserId)
       .then(setSessionList)
       .catch(() => setSessionList(null));
-  }, []);
+  }, [selectedUserId]);
 
   if (error) return <p className="empty-state">Couldn't load this session: {error}</p>;
   if (!session) return <p className="empty-state">Loading…</p>;

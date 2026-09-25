@@ -439,3 +439,49 @@ body {
 .segment-actions .segment-delete {
   color: var(--viz-critical, #d03b3b);
 }
+
+/* --- User switcher (header) + .fit upload bar --- */
+.app-header-right {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.user-switcher {
+  padding: 4px 8px;
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  background: var(--color-surface);
+  color: var(--color-text);
+  font-size: 0.9rem;
+}
+
+.upload-bar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.upload-bar button {
+  padding: 8px 14px;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  background: var(--color-surface);
+  font-size: 0.9rem;
+  cursor: pointer;
+}
+
+.upload-bar button:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.badge-source {
+  background: rgba(63, 111, 168, 0.12);
+  color: var(--color-accent);
+}
+
+.status-error {
+  color: var(--color-alert);
+}
