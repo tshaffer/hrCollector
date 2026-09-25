@@ -19,11 +19,6 @@ struct ContentView: View {
                             Task { await healthKit.requestAuthorization() }
                         }
                     }
-                    if selectedUserId.isEmpty {
-                        Text("Pick a user in Settings before syncing.")
-                            .font(.footnote)
-                            .foregroundStyle(.secondary)
-                    }
                     Button {
                         Task { await syncNow() }
                     } label: {
@@ -33,7 +28,7 @@ struct ContentView: View {
                             Text("Sync Now")
                         }
                     }
-                    .disabled(!healthKit.isAuthorized || isSyncing || selectedUserId.isEmpty)
+                    .disabled(!healthKit.isAuthorized || isSyncing)
 
                     if let statusMessage {
                         Text(statusMessage)
@@ -75,6 +70,12 @@ struct ContentView: View {
             }
             .sheet(isPresented: $showSettings) { SettingsView() }
             .task {
+                // Best-effort: resolve to Lori automatically so the app
+                // works out of the box without a trip to Settings. If the
+                // server isn't reachable yet this silently no-ops — Sync
+                // Now retries it and surfaces a real error if it's still
+                // unresolved then.
+                _ = await resolveSelectedUserId()
                 if healthKit.isAuthorized {
                     await refreshFromHealthKit()
                 }
@@ -90,18 +91,37 @@ struct ContentView: View {
         }
     }
 
-    private func syncNow() async {
-        guard !selectedUserId.isEmpty else {
-            statusMessage = "Pick a user in Settings before syncing."
-            return
+    /// This phone is Lori's — there's only ever one real user of the iOS
+    /// app — so rather than making her pick herself from a list, this
+    /// resolves (and remembers) her user id automatically the first time
+    /// it's needed.
+    private func resolveSelectedUserId() async -> String? {
+        if !selectedUserId.isEmpty { return selectedUserId }
+        do {
+            let users = try await apiClient.fetchUsers()
+            if let lori = users.first(where: { $0.name.caseInsensitiveCompare("Lori") == .orderedSame }) {
+                selectedUserId = lori.id
+                return lori.id
+            }
+        } catch {
+            // Sync Now surfaces a clearer error if this is still
+            // unresolved when actually needed.
         }
+        return nil
+    }
 
+    private func syncNow() async {
         isSyncing = true
         statusMessage = nil
         defer { isSyncing = false }
 
+        guard let userId = await resolveSelectedUserId() else {
+            statusMessage = "Couldn't find a user to sync as — check the server URL in Settings."
+            return
+        }
+
         await refreshFromHealthKit()
-        let result = await apiClient.uploadAll(sessions, userId: selectedUserId)
+        let result = await apiClient.uploadAll(sessions, userId: userId)
         if result.failed.isEmpty {
             statusMessage = "Synced \(result.succeeded) session(s)."
         } else {

@@ -72,6 +72,11 @@ struct SettingsView: View {
         defer { isLoading = false }
         do {
             users = try await apiClient.fetchUsers()
+            // Lori is the only real user of this app (it's her phone) —
+            // default to her instead of making anyone pick.
+            if selectedUserId.isEmpty, let lori = users.first(where: { $0.name.caseInsensitiveCompare("Lori") == .orderedSame }) {
+                selectedUserId = lori.id
+            }
         } catch {
             loadError = "Couldn't load users: \(error.localizedDescription)"
         }
