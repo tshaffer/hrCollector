@@ -87,6 +87,7 @@ export default function SessionListPage() {
               </div>
               <div className="session-card-stats">
                 <span>Max {formatBpm(session.stats.maxBpm)}</span>
+                <span>Min {formatBpm(session.stats.minBpm)}</span>
                 <span>Avg {formatBpm(session.stats.avgBpm)}</span>
                 {session.dataSource === "fit" && <span className="badge badge-source">.fit</span>}
                 <span className={`badge ${exceeded ? "badge-alert" : "badge-safe"}`}>

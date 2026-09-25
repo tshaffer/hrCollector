@@ -65,6 +65,7 @@ function SegmentRow({
       </td>
       <td>{formatDuration(segment.stats.durationSeconds)}</td>
       <td>{formatBpm(segment.stats.maxBpm)}</td>
+      <td>{formatBpm(segment.stats.minBpm)}</td>
       <td>{formatBpm(segment.stats.avgBpm)}</td>
       <td>
         <input
@@ -203,6 +204,10 @@ export default function SessionDetailPage() {
           <div className="stat-tile-value">{formatBpm(stats.maxBpm)}</div>
         </div>
         <div className="stat-tile">
+          <div className="stat-tile-label">Min heart rate</div>
+          <div className="stat-tile-value">{formatBpm(stats.minBpm)}</div>
+        </div>
+        <div className="stat-tile">
           <div className="stat-tile-label">Average heart rate</div>
           <div className="stat-tile-value">{formatBpm(stats.avgBpm)}</div>
         </div>
@@ -235,6 +240,7 @@ export default function SessionDetailPage() {
                 <th>Time</th>
                 <th>Duration</th>
                 <th>Max</th>
+                <th>Min</th>
                 <th>Avg</th>
                 <th>Label</th>
                 <th></th>

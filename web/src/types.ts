@@ -10,6 +10,7 @@ export interface HeartRateSample {
 
 export interface SessionStats {
   maxBpm: number | null;
+  minBpm: number | null;
   avgBpm: number | null;
   secondsAboveThreshold: number;
   percentAboveThreshold: number | null;
