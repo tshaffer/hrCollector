@@ -200,12 +200,12 @@ export default function SessionDetailPage() {
           <div className="stat-tile-value">{formatDuration(stats.durationSeconds)}</div>
         </div>
         <div className="stat-tile">
-          <div className="stat-tile-label">Max heart rate</div>
-          <div className="stat-tile-value">{formatBpm(stats.maxBpm)}</div>
-        </div>
-        <div className="stat-tile">
           <div className="stat-tile-label">Min heart rate</div>
           <div className="stat-tile-value">{formatBpm(stats.minBpm)}</div>
+        </div>
+        <div className="stat-tile">
+          <div className="stat-tile-label">Max heart rate</div>
+          <div className="stat-tile-value">{formatBpm(stats.maxBpm)}</div>
         </div>
         <div className="stat-tile">
           <div className="stat-tile-label">Average heart rate</div>
