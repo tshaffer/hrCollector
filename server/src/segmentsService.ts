@@ -1,3 +1,4 @@
+import { getSettings } from "./models/Settings.js";
 import { SegmentModel } from "./models/Segment.js";
 import { SessionModel, type SessionDocument } from "./models/Session.js";
 import { detectAutoSegments } from "./segmentDetection.js";
@@ -50,13 +51,31 @@ export async function regenerateAutoSegments(
   }
 }
 
-/** Re-runs auto-detection across every session — used at startup and
- * whenever the detection settings change, since (unlike thresholdBpm)
- * these aren't snapshotted per session. */
-export async function regenerateAllAutoSegments(minSegmentDurationSeconds: number, mergeGapSeconds: number) {
-  const sessions = await SessionModel.find({});
+/** Re-runs auto-detection for every session belonging to one user, using
+ * that user's own settings. Used when that user's settings change, since
+ * (unlike thresholdBpm) minSegmentDurationSeconds/mergeGapSeconds aren't
+ * snapshotted per session. */
+export async function regenerateAutoSegmentsForUser(
+  userId: string,
+  minSegmentDurationSeconds: number,
+  mergeGapSeconds: number
+) {
+  const sessions = await SessionModel.find({ userId });
   for (const session of sessions) {
     await regenerateAutoSegments(session as SessionDoc, minSegmentDurationSeconds, mergeGapSeconds);
+  }
+  return sessions.length;
+}
+
+/** Re-runs auto-detection across every session for every user, each with
+ * its own owner's settings — used at startup, to cover sessions recorded
+ * before this feature existed or while the server wasn't running to catch
+ * a settings change. */
+export async function regenerateAllAutoSegments() {
+  const sessions = await SessionModel.find({});
+  for (const session of sessions) {
+    const settings = await getSettings(String(session.userId));
+    await regenerateAutoSegments(session as SessionDoc, settings.minSegmentDurationSeconds, settings.mergeGapSeconds);
   }
   return sessions.length;
 }
