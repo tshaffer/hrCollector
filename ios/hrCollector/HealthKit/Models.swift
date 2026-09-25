@@ -30,3 +30,11 @@ struct WorkoutSession: Codable, Identifiable, Hashable {
     var minBPM: Double? { heartRateSamples.map(\.bpm).min() }
     var maxBPM: Double? { heartRateSamples.map(\.bpm).max() }
 }
+
+/// One of the fixed set of people the server tracks heart rate data for
+/// (see the server's User model). Fetched from `/api/users` so this app
+/// never has to hardcode ids.
+struct UserSummary: Codable, Identifiable, Hashable {
+    let id: String
+    let name: String
+}

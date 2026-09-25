@@ -2,7 +2,14 @@ import SwiftUI
 
 struct SettingsView: View {
     @AppStorage(SettingsKeys.serverBaseURL) private var serverBaseURL: String = ""
+    @AppStorage(SettingsKeys.selectedUserId) private var selectedUserId: String = ""
     @Environment(\.dismiss) private var dismiss
+
+    @State private var users: [UserSummary] = []
+    @State private var loadError: String?
+    @State private var isLoading = false
+
+    private let apiClient = APIClient()
 
     var body: some View {
         NavigationStack {
@@ -18,6 +25,34 @@ struct SettingsView: View {
                         .font(.footnote)
                         .foregroundStyle(.secondary)
                 }
+
+                Section("Uploading as") {
+                    if users.isEmpty {
+                        if isLoading {
+                            ProgressView()
+                        } else {
+                            Text("Load the user list after setting the server URL above.")
+                                .font(.footnote)
+                                .foregroundStyle(.secondary)
+                        }
+                    } else {
+                        Picker("User", selection: $selectedUserId) {
+                            Text("Choose…").tag("")
+                            ForEach(users) { user in
+                                Text(user.name).tag(user.id)
+                            }
+                        }
+                    }
+                    Button(users.isEmpty ? "Load Users" : "Refresh Users") {
+                        Task { await loadUsers() }
+                    }
+                    .disabled(isLoading)
+                    if let loadError {
+                        Text(loadError)
+                            .font(.footnote)
+                            .foregroundStyle(.red)
+                    }
+                }
             }
             .navigationTitle("Settings")
             .toolbar {
@@ -25,6 +60,20 @@ struct SettingsView: View {
                     Button("Done") { dismiss() }
                 }
             }
+            .task {
+                if !serverBaseURL.isEmpty { await loadUsers() }
+            }
+        }
+    }
+
+    private func loadUsers() async {
+        isLoading = true
+        loadError = nil
+        defer { isLoading = false }
+        do {
+            users = try await apiClient.fetchUsers()
+        } catch {
+            loadError = "Couldn't load users: \(error.localizedDescription)"
         }
     }
 }

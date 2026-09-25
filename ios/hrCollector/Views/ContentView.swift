@@ -2,6 +2,7 @@ import SwiftUI
 
 struct ContentView: View {
     @EnvironmentObject private var healthKit: HealthKitManager
+    @AppStorage(SettingsKeys.selectedUserId) private var selectedUserId: String = ""
     @State private var sessions: [WorkoutSession] = []
     @State private var isSyncing = false
     @State private var statusMessage: String?
@@ -18,6 +19,11 @@ struct ContentView: View {
                             Task { await healthKit.requestAuthorization() }
                         }
                     }
+                    if selectedUserId.isEmpty {
+                        Text("Pick a user in Settings before syncing.")
+                            .font(.footnote)
+                            .foregroundStyle(.secondary)
+                    }
                     Button {
                         Task { await syncNow() }
                     } label: {
@@ -27,7 +33,7 @@ struct ContentView: View {
                             Text("Sync Now")
                         }
                     }
-                    .disabled(!healthKit.isAuthorized || isSyncing)
+                    .disabled(!healthKit.isAuthorized || isSyncing || selectedUserId.isEmpty)
 
                     if let statusMessage {
                         Text(statusMessage)
@@ -85,12 +91,17 @@ struct ContentView: View {
     }
 
     private func syncNow() async {
+        guard !selectedUserId.isEmpty else {
+            statusMessage = "Pick a user in Settings before syncing."
+            return
+        }
+
         isSyncing = true
         statusMessage = nil
         defer { isSyncing = false }
 
         await refreshFromHealthKit()
-        let result = await apiClient.uploadAll(sessions)
+        let result = await apiClient.uploadAll(sessions, userId: selectedUserId)
         if result.failed.isEmpty {
             statusMessage = "Synced \(result.succeeded) session(s)."
         } else {
